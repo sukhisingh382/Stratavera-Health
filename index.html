@@ -1,0 +1,579 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ontario's Connected Health System</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  html,body { width:100%; height:100%; background:#0F5C4E; overflow:hidden; }
+
+  .viz-wrap {
+    width:100%; height:100vh;
+    display:flex; flex-direction:column;
+    align-items:center; justify-content:center;
+    position:relative;
+    background:radial-gradient(ellipse 85% 75% at 50% 45%,
+      #1D7A60 0%, #0F5C4E 55%, #083D32 100%);
+  }
+  .viz-wrap::before {
+    content:''; position:absolute; inset:0;
+    background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 512 512' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='1'/%3E%3C/svg%3E");
+    opacity:0.022; pointer-events:none;
+  }
+
+  .canvas-wrap {
+    width:100%;
+    max-width:min(100vw,177.78vh);
+    aspect-ratio:16/9;
+    position:relative;
+  }
+  svg#network { width:100%; height:100%; overflow:visible; }
+
+  .caption-bar {
+    position:absolute; bottom:0; left:0; right:0;
+    padding:0 0 clamp(14px,3.5vh,38px);
+    text-align:center; z-index:10;
+  }
+  .caption-text {
+    font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;
+    font-size:clamp(12px,2vw,26px); font-weight:700;
+    color:#fff; line-height:1.35;
+    opacity:0; transform:translateY(6px);
+    transition:opacity 0.6s ease,transform 0.6s ease;
+    text-shadow:0 2px 10px rgba(0,0,0,0.45);
+  }
+  .caption-text.visible { opacity:1; transform:translateY(0); }
+  .caption-dots { display:flex; justify-content:center; gap:6px; margin-top:8px; }
+  .caption-dot {
+    width:clamp(4px,.5vw,7px); height:clamp(4px,.5vw,7px);
+    border-radius:50%; background:rgba(255,255,255,0.25); transition:background .3s;
+  }
+  .caption-dot.active { background:#52E0A5; }
+
+  .node-tooltip {
+    position:absolute;
+    background:rgba(5,30,22,0.97);
+    border:1px solid rgba(82,224,165,0.32);
+    border-radius:8px; padding:10px 14px;
+    pointer-events:none; z-index:20; max-width:245px;
+    opacity:0; transition:opacity .2s; backdrop-filter:blur(12px);
+  }
+  .node-tooltip.visible { opacity:1; }
+  .tooltip-title {
+    font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;
+    font-size:clamp(9px,1.1vw,13px); font-weight:700;
+    color:#52E0A5; margin-bottom:4px;
+  }
+  .tooltip-desc {
+    font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;
+    font-size:clamp(8px,.9vw,11.5px); font-weight:400;
+    color:rgba(255,255,255,.7); line-height:1.5;
+  }
+
+  /* SVG */
+  .ring-outer { fill:none; stroke:rgba(255,255,255,.07); stroke-width:1; }
+  .oht-ring   { fill:rgba(82,224,165,.04); stroke:rgba(82,224,165,.22);
+                stroke-width:1.2; stroke-dasharray:8 5; }
+  .link       { fill:none; stroke:rgba(255,255,255,.16); stroke-width:1.3; }
+  .link-teal  { stroke:rgba(82,224,165,.28); }
+  .nbo        { fill:rgba(255,255,255,.07); stroke:rgba(255,255,255,.26); stroke-width:1.2; }
+  .nbi        { fill:rgba(255,255,255,.12); }
+  .nbo-p      { fill:rgba(82,224,165,.18);  stroke:rgba(82,224,165,.78); stroke-width:1.8; }
+  .nbi-p      { fill:rgba(82,224,165,.28); }
+  .node-hit   { fill:transparent; stroke:none; cursor:pointer; }
+
+  @keyframes pRing {
+    0%  { r:30; opacity:.5; }
+    100%{ r:58; opacity:0;  }
+  }
+  .pr1 { animation:pRing 2.5s ease-out infinite;
+         fill:none; stroke:rgba(82,224,165,.45); stroke-width:1.5; }
+  .pr2 { animation:pRing 2.5s ease-out 1.25s infinite;
+         fill:none; stroke:rgba(82,224,165,.25); stroke-width:1; }
+
+  @keyframes rotOHT {
+    from{ transform:rotate(0deg); }
+    to  { transform:rotate(360deg); }
+  }
+  .oht-grp { transform-origin:800px 450px; animation:rotOHT 70s linear infinite; }
+
+  @keyframes nglow {
+    0%,100%{ opacity:.08; } 50%{ opacity:.18; }
+  }
+  .nglow { animation:nglow 3s ease-in-out infinite; }
+
+  /* label base */
+  .lm  { font-family:-apple-system,Helvetica,Arial,sans-serif; font-size:11.5px;
+          font-weight:600; fill:rgba(255,255,255,.9); pointer-events:none; }
+  .ls  { font-family:-apple-system,Helvetica,Arial,sans-serif; font-size:9px;
+          font-weight:400; fill:rgba(255,255,255,.52); pointer-events:none; }
+  .lmo { font-family:-apple-system,Helvetica,Arial,sans-serif; font-size:10.5px;
+          font-weight:600; fill:rgba(255,255,255,.75); pointer-events:none; }
+  .lso { font-family:-apple-system,Helvetica,Arial,sans-serif; font-size:8.5px;
+          font-weight:400; fill:rgba(255,255,255,.42); pointer-events:none; }
+  /* Mental Health bold override */
+  .lmh { font-family:-apple-system,Helvetica,Arial,sans-serif; font-size:11.5px;
+          font-weight:700; fill:rgba(255,255,255,.95); pointer-events:none; }
+</style>
+</head>
+<body>
+<div class="viz-wrap" id="vizWrap">
+<div class="canvas-wrap" id="canvasWrap">
+<svg id="network" viewBox="0 0 1600 900" xmlns="http://www.w3.org/2000/svg">
+<defs>
+  <filter id="glow" x="-60%" y="-60%" width="220%" height="220%">
+    <feGaussianBlur in="SourceGraphic" stdDeviation="4" result="b"/>
+    <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+  </filter>
+  <filter id="glow2">
+    <feGaussianBlur in="SourceGraphic" stdDeviation="9" result="b"/>
+    <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+  </filter>
+  <radialGradient id="platGrad" cx="50%" cy="30%" r="60%">
+    <stop offset="0%"   stop-color="#2A9A6A" stop-opacity=".42"/>
+    <stop offset="100%" stop-color="#0F5C4E" stop-opacity="0"/>
+  </radialGradient>
+  <!-- OHT arc for curved text label -->
+  <path id="ohtArc" d="M 594,450 A 206,206 0 0,1 1006,450" fill="none" stroke="none"/>
+</defs>
+
+<!-- ── PLATFORM ELLIPSES ── -->
+<ellipse cx="800" cy="492" rx="518" ry="156" class="ring-outer"/>
+<ellipse cx="800" cy="492" rx="373" ry="113" class="ring-outer" style="opacity:.55"/>
+<ellipse cx="800" cy="492" rx="233" ry="70"  class="ring-outer" style="opacity:.44"/>
+<ellipse cx="800" cy="492" rx="113" ry="34"  class="ring-outer" style="opacity:.34"/>
+<ellipse cx="800" cy="492" rx="518" ry="156" fill="url(#platGrad)"/>
+
+<!-- ── OHT ROTATING RING ── -->
+<g class="oht-grp">
+  <circle cx="800" cy="450" r="206" class="oht-ring"/>
+</g>
+<!-- OHT curved label (static, along arc top) -->
+<text>
+  <textPath href="#ohtArc" startOffset="50%" text-anchor="middle"
+    style="font-family:-apple-system,Helvetica,Arial,sans-serif;
+           font-size:9.5px; font-weight:600;
+           fill:rgba(82,224,165,.48); letter-spacing:.18em;">
+    ONTARIO HEALTH TEAMS
+  </textPath>
+</text>
+
+<!-- ── LINKS: INNER → CENTRE ── -->
+<line x1="800" y1="280" x2="800" y2="420" class="link link-teal"/>
+<line x1="920" y1="332" x2="822" y2="428" class="link link-teal"/>
+<line x1="965" y1="450" x2="832" y2="450" class="link"/>
+<line x1="920" y1="568" x2="822" y2="472" class="link"/>
+<line x1="800" y1="618" x2="800" y2="482" class="link"/>
+<line x1="680" y1="568" x2="778" y2="472" class="link"/>
+<line x1="635" y1="450" x2="768" y2="450" class="link link-teal"/>
+<line x1="680" y1="332" x2="778" y2="428" class="link"/>
+
+<!-- ── LINKS: OUTER → INNER ── -->
+<line x1="800"  y1="148" x2="800"  y2="250" class="link" style="stroke:rgba(255,255,255,.11)"/>
+<line x1="800"  y1="148" x2="910"  y2="382" class="link" style="stroke:rgba(255,255,255,.07)"/>
+<line x1="1015" y1="240" x2="838"  y2="428" class="link" style="stroke:rgba(255,255,255,.08)"/>
+<line x1="1105" y1="450" x2="993"  y2="450" class="link" style="stroke:rgba(255,255,255,.11)"/>
+<line x1="1015" y1="660" x2="700"  y2="502" class="link" style="stroke:rgba(255,255,255,.08)"/>
+<line x1="800"  y1="752" x2="720"  y2="586" class="link" style="stroke:rgba(255,255,255,.09)"/>
+<line x1="495"  y1="450" x2="607"  y2="450" class="link" style="stroke:rgba(255,255,255,.09)"/>
+<line x1="585"  y1="240" x2="788"  y2="278" class="link" style="stroke:rgba(82,224,165,.16)"/>
+
+<!-- ── INNER CROSS LINKS ── -->
+<line x1="800" y1="280" x2="920" y2="332" class="link" style="stroke:rgba(255,255,255,.08);opacity:.5"/>
+<line x1="920" y1="568" x2="800" y2="618" class="link" style="stroke:rgba(255,255,255,.08);opacity:.5"/>
+<line x1="680" y1="568" x2="800" y2="618" class="link" style="stroke:rgba(255,255,255,.08);opacity:.5"/>
+<line x1="680" y1="332" x2="800" y2="280" class="link" style="stroke:rgba(255,255,255,.08);opacity:.5"/>
+
+<!-- ── PARTICLES ── -->
+<g id="particles"></g>
+
+<!-- ══════════════════════
+     TITLE — bold, larger
+══════════════════════ -->
+<text x="800" y="57"
+  style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;
+         font-size:22px; font-weight:700; fill:rgba(255,255,255,.90);
+         text-anchor:middle; letter-spacing:.13em;">
+  ONTARIO'S INTEGRATED HEALTH SYSTEM
+</text>
+<line x1="220" y1="68" x2="618" y2="68" style="stroke:rgba(255,255,255,.18);stroke-width:1;"/>
+<line x1="982" y1="68" x2="1380" y2="68" style="stroke:rgba(255,255,255,.18);stroke-width:1;"/>
+
+<!-- ══════════════════════
+     PATIENT — CENTRE
+     Source: ontario.ca
+══════════════════════ -->
+<g class="node-group"
+   data-title="The Patient"
+   data-desc="At the centre of Ontario's 58 Ontario Health Teams. Every provider, service and connection in this system exists to serve ~15 million Ontarians navigating care. (Source: ontario.ca; Statistics Canada 2024)">
+  <circle cx="800" cy="450" r="30" class="pr1"/>
+  <circle cx="800" cy="450" r="30" class="pr2"/>
+  <circle cx="800" cy="450" r="46" fill="rgba(82,224,165,.09)" class="nglow" filter="url(#glow2)"/>
+  <circle cx="800" cy="450" r="36" class="nbo nbo-p"/>
+  <circle cx="800" cy="450" r="23" class="nbi nbi-p"/>
+  <text x="800" y="451"
+    style="font-size:21px;font-family:'Segoe UI Emoji',Arial,sans-serif;
+           dominant-baseline:middle;text-anchor:middle;pointer-events:none;">🧑</text>
+  <!-- label BELOW: cy+r+gap = 450+36+18=504 -->
+  <text x="800" y="504" class="lm"
+    style="text-anchor:middle;fill:#52E0A5;font-weight:700;">Patient</text>
+  <text x="800" y="518" class="ls"
+    style="text-anchor:middle;fill:rgba(82,224,165,.65);">at the centre</text>
+  <circle cx="800" cy="450" r="50" class="node-hit"/>
+</g>
+
+<!-- ══════════════════════
+     INNER RING (r=29–31)
+══════════════════════ -->
+
+<!-- PRIMARY CARE (800,280,r=31) · label BELOW: y=280+31+14=325 -->
+<g class="node-group"
+   data-title="Primary Care"
+   data-desc="Family physicians, nurse practitioners, walk-in clinics and community health centres — the first point of contact for Ontarians. The province invested $110M to connect 328,000 more people to primary care teams in 2024. (Source: ontario.ca Ministry of Health, 2024–25 Annual Plan)">
+  <circle cx="800" cy="280" r="31" class="nbo"/>
+  <circle cx="800" cy="280" r="20" class="nbi"/>
+  <text x="800" y="281"
+    style="font-size:19px;font-family:'Segoe UI Emoji',Arial,sans-serif;
+           dominant-baseline:middle;text-anchor:middle;pointer-events:none;">🩺</text>
+  <text x="800" y="325" class="lm" style="text-anchor:middle;">Primary Care</text>
+  <text x="800" y="339" class="ls" style="text-anchor:middle;">Family Physicians · Nurse Practitioners</text>
+  <circle cx="800" cy="280" r="43" class="node-hit"/>
+</g>
+
+<!-- VIRTUAL CARE (920,332,r=29) · label RIGHT: x=920+29+14=963 -->
+<g class="node-group"
+   data-title="Virtual Care"
+   data-desc="Telehealth, video visits and remote monitoring expanded significantly across Ontario. Health811 (dial 8-1-1) connects Ontarians to registered nurses 24/7 for health advice and care navigation. (Source: ontario.ca Ministry of Health, 2024–25 Annual Plan)">
+  <circle cx="920" cy="332" r="29" class="nbo"/>
+  <circle cx="920" cy="332" r="18" class="nbi"/>
+  <text x="920" y="333"
+    style="font-size:18px;font-family:'Segoe UI Emoji',Arial,sans-serif;
+           dominant-baseline:middle;text-anchor:middle;pointer-events:none;">💻</text>
+  <text x="963" y="327" class="lm" style="text-anchor:start;">Virtual Care</text>
+  <text x="963" y="341" class="ls" style="text-anchor:start;">Telehealth · Health811</text>
+  <circle cx="920" cy="332" r="41" class="node-hit"/>
+</g>
+
+<!-- ACUTE HOSPITAL (965,450,r=31) · label RIGHT: x=965+31+12=1008 -->
+<g class="node-group"
+   data-title="Acute &amp; Surgical Care"
+   data-desc="Ontario's 141 Ontario Hospital Association member hospitals deliver emergency, surgical, diagnostic and complex acute care. The province funded over 3,500 permanent new hospital beds since 2020. (Source: Ontario Hospital Association; ontario.ca 2024–25 Annual Plan)">
+  <circle cx="965" cy="450" r="31" class="nbo"/>
+  <circle cx="965" cy="450" r="20" class="nbi"/>
+  <text x="965" y="451"
+    style="font-size:19px;font-family:'Segoe UI Emoji',Arial,sans-serif;
+           dominant-baseline:middle;text-anchor:middle;pointer-events:none;">🏥</text>
+  <text x="1008" y="445" class="lm" style="text-anchor:start;">Acute Hospital</text>
+  <text x="1008" y="459" class="ls" style="text-anchor:start;">141 OHA member hospitals</text>
+  <circle cx="965" cy="450" r="43" class="node-hit"/>
+</g>
+
+<!-- EMERGENCY (920,568,r=29) · label LOWER-RIGHT: x=953, y=568+29+14=611 -->
+<g class="node-group"
+   data-title="Emergency &amp; Paramedic Services"
+   data-desc="Ontario's 55 certified municipal and county paramedic services. The Community Paramedicine for Long-Term Care program has provided care to 48,000+ individuals at home as of October 2023. (Source: ontario.ca Ministry of Long-Term Care, 2024–25 Annual Plan)">
+  <circle cx="920" cy="568" r="29" class="nbo"/>
+  <circle cx="920" cy="568" r="18" class="nbi"/>
+  <text x="920" y="569"
+    style="font-size:18px;font-family:'Segoe UI Emoji',Arial,sans-serif;
+           dominant-baseline:middle;text-anchor:middle;pointer-events:none;">🚑</text>
+  <text x="953" y="609" class="lm" style="text-anchor:start;">Emergency</text>
+  <text x="953" y="623" class="ls" style="text-anchor:start;">55 Paramedic Services</text>
+  <circle cx="920" cy="568" r="41" class="node-hit"/>
+</g>
+
+<!-- PHARMACY (800,618,r=29) · label BELOW: y=618+29+14=661 -->
+<g class="node-group"
+   data-title="Pharmacy"
+   data-desc="More than 4,600 pharmacies across Ontario participate in the expanded scope program — completing 700,000+ pharmacist assessments and treating 19 common ailments since 2023. (Source: ontario.ca Ministry of Health, 2024–25 Annual Plan)">
+  <circle cx="800" cy="618" r="29" class="nbo"/>
+  <circle cx="800" cy="618" r="18" class="nbi"/>
+  <text x="800" y="619"
+    style="font-size:18px;font-family:'Segoe UI Emoji',Arial,sans-serif;
+           dominant-baseline:middle;text-anchor:middle;pointer-events:none;">💊</text>
+  <text x="800" y="661" class="lm" style="text-anchor:middle;">Pharmacy</text>
+  <text x="800" y="675" class="ls" style="text-anchor:middle;">4,600+ participating pharmacies</text>
+  <circle cx="800" cy="618" r="41" class="node-hit"/>
+</g>
+
+<!-- MENTAL HEALTH & ADDICTIONS (680,568,r=29)
+     label LOWER-LEFT: x=680-29-12=639→ use 634, y=611
+     ALL BOLD per request -->
+<g class="node-group"
+   data-title="Mental Health &amp; Addictions"
+   data-desc="Community mental health teams, CAMH, crisis services and addictions treatment across Ontario. The province's 10-year mental health and addictions plan is investing $3.8 billion to build a more connected system of care. (Source: ontario.ca Ministry of Health)">
+  <circle cx="680" cy="568" r="29" class="nbo"/>
+  <circle cx="680" cy="568" r="18" class="nbi"/>
+  <text x="680" y="569"
+    style="font-size:18px;font-family:'Segoe UI Emoji',Arial,sans-serif;
+           dominant-baseline:middle;text-anchor:middle;pointer-events:none;">🧠</text>
+  <!-- BOLD main label, two lines, text-anchor end -->
+  <text x="634" y="609" class="lmh" style="text-anchor:end;">Mental Health</text>
+  <text x="634" y="625" class="lmh" style="text-anchor:end;">&amp; Addictions</text>
+  <circle cx="680" cy="568" r="41" class="node-hit"/>
+</g>
+
+<!-- HOME & COMMUNITY CARE (635,450,r=31) · label LEFT: x=635-31-16=588 -->
+<g class="node-group"
+   data-title="Home &amp; Community Care"
+   data-desc="Ontario Health atHome delivers in-home nursing, personal support and rehabilitation. A 94% reduction in waitlisted patients for home-based personal support services was achieved from 2022–23 to 2024–25, supported by $1.1B in new investment. (Source: ontario.ca 2026 Budget)">
+  <circle cx="635" cy="450" r="31" class="nbo"/>
+  <circle cx="635" cy="450" r="20" class="nbi"/>
+  <text x="635" y="451"
+    style="font-size:19px;font-family:'Segoe UI Emoji',Arial,sans-serif;
+           dominant-baseline:middle;text-anchor:middle;pointer-events:none;">🏠</text>
+  <text x="586" y="440" class="lm" style="text-anchor:end;">Home &amp;</text>
+  <text x="586" y="454" class="lm" style="text-anchor:end;">Community Care</text>
+  <text x="586" y="468" class="ls" style="text-anchor:end;">Ontario Health atHome</text>
+  <circle cx="635" cy="450" r="43" class="node-hit"/>
+</g>
+
+<!-- LONG-TERM CARE (680,332,r=29)
+     label UPPER-LEFT: x=634(end), y_main=332-29-18=285, y_sub=299 -->
+<g class="node-group"
+   data-title="Long-Term Care"
+   data-desc="Ontario's 626 licensed long-term care homes house over 78,000 residents, providing 24/7 nursing and personal care. The province is building 30,000 new LTC beds by 2028. (Source: Financial Accountability Office of Ontario; ontario.ca Ministry of Long-Term Care)">
+  <circle cx="680" cy="332" r="29" class="nbo"/>
+  <circle cx="680" cy="332" r="18" class="nbi"/>
+  <text x="680" y="333"
+    style="font-size:18px;font-family:'Segoe UI Emoji',Arial,sans-serif;
+           dominant-baseline:middle;text-anchor:middle;pointer-events:none;">🏡</text>
+  <text x="634" y="285" class="lm" style="text-anchor:end;">Long-Term Care</text>
+  <text x="634" y="299" class="ls" style="text-anchor:end;">626 licensed LTC homes</text>
+  <circle cx="680" cy="332" r="41" class="node-hit"/>
+</g>
+
+<!-- ══════════════════════
+     OUTER RING (r=25–27)
+══════════════════════ -->
+
+<!-- MINISTRY OF HEALTH (800,148,r=27)
+     label ABOVE: y=148-27-18=103(main), y=89(sub) -->
+<g class="node-group"
+   data-title="Ministry of Health"
+   data-desc="Sets health policy, allocates funding and administers legislation for Ontario's publicly funded system. The 2024–25 health sector budget reached $89.9 billion. (Source: ontario.ca Ministry of Health, 2024–25 Annual Plan)">
+  <circle cx="800" cy="148" r="27" class="nbo" style="stroke:rgba(255,255,255,.22)"/>
+  <circle cx="800" cy="148" r="17" class="nbi"/>
+  <text x="800" y="149"
+    style="font-size:17px;font-family:'Segoe UI Emoji',Arial,sans-serif;
+           dominant-baseline:middle;text-anchor:middle;pointer-events:none;">🏛️</text>
+  <text x="800" y="103" class="lmo" style="text-anchor:middle;">Ministry of Health</text>
+  <text x="800" y="117" class="lso" style="text-anchor:middle;">Policy · Legislation · Funding</text>
+  <circle cx="800" cy="148" r="38" class="node-hit"/>
+</g>
+
+<!-- PUBLIC HEALTH (1015,240,r=25)
+     label RIGHT: x=1015+25+12=1052 -->
+<g class="node-group"
+   data-title="Public Health"
+   data-desc="Ontario's 34 Public Health Units deliver disease prevention, immunization programs, health promotion and population-level surveillance across the province. (Source: ontario.ca; Public Health Ontario)">
+  <circle cx="1015" cy="240" r="25" class="nbo"/>
+  <circle cx="1015" cy="240" r="16" class="nbi"/>
+  <text x="1015" y="241"
+    style="font-size:15px;font-family:'Segoe UI Emoji',Arial,sans-serif;
+           dominant-baseline:middle;text-anchor:middle;pointer-events:none;">🛡️</text>
+  <text x="1052" y="235" class="lmo" style="text-anchor:start;">Public Health</text>
+  <text x="1052" y="249" class="lso" style="text-anchor:start;">34 Public Health Units</text>
+  <circle cx="1015" cy="240" r="37" class="node-hit"/>
+</g>
+
+<!-- SPECIALIST CARE (1105,450,r=25)
+     label RIGHT: x=1105+25+12=1142 -->
+<g class="node-group"
+   data-title="Specialist &amp; Diagnostic Care"
+   data-desc="Specialists, diagnostic imaging (MRI/CT), laboratories, cancer care and community surgical centres. The province expanded community surgical and diagnostic centres in 2024 to reduce wait times. (Source: ontario.ca Ministry of Health, 2024–25 Annual Plan)">
+  <circle cx="1105" cy="450" r="25" class="nbo"/>
+  <circle cx="1105" cy="450" r="16" class="nbi"/>
+  <text x="1105" y="451"
+    style="font-size:15px;font-family:'Segoe UI Emoji',Arial,sans-serif;
+           dominant-baseline:middle;text-anchor:middle;pointer-events:none;">🔬</text>
+  <text x="1142" y="445" class="lmo" style="text-anchor:start;">Specialist Care</text>
+  <text x="1142" y="459" class="lso" style="text-anchor:start;">Referrals · Diagnostics · Cancer Care</text>
+  <circle cx="1105" cy="450" r="37" class="node-hit"/>
+</g>
+
+<!-- INDIGENOUS HEALTH (1015,660,r=25)
+     label RIGHT: x=1052 -->
+<g class="node-group"
+   data-title="Indigenous Health"
+   data-desc="First Nations, Métis and Inuit health services — including 133 First Nations communities, Indigenous-led community health centres, health access centres and First Nations health departments across Ontario. (Source: Ontario Health, West Region Indigenous Health Strategy)">
+  <circle cx="1015" cy="660" r="25" class="nbo"/>
+  <circle cx="1015" cy="660" r="16" class="nbi"/>
+  <text x="1015" y="661"
+    style="font-size:15px;font-family:'Segoe UI Emoji',Arial,sans-serif;
+           dominant-baseline:middle;text-anchor:middle;pointer-events:none;">🪶</text>
+  <text x="1052" y="655" class="lmo" style="text-anchor:start;">Indigenous Health</text>
+  <text x="1052" y="669" class="lso" style="text-anchor:start;">First Nations · Métis · Inuit</text>
+  <circle cx="1015" cy="660" r="37" class="node-hit"/>
+</g>
+
+<!-- COMMUNITY SUPPORT (800,752,r=25)
+     label BELOW: y=752+25+16=793 -->
+<g class="node-group"
+   data-title="Community &amp; Social Support"
+   data-desc="Supportive housing, community health centres, food security and social services addressing the social determinants of health. Ontario committed $53M over three years to expand supportive housing for vulnerable populations. (Source: ontario.ca 2026 Budget)">
+  <circle cx="800" cy="752" r="25" class="nbo"/>
+  <circle cx="800" cy="752" r="16" class="nbi"/>
+  <text x="800" y="753"
+    style="font-size:15px;font-family:'Segoe UI Emoji',Arial,sans-serif;
+           dominant-baseline:middle;text-anchor:middle;pointer-events:none;">🤝</text>
+  <text x="800" y="793" class="lmo" style="text-anchor:middle;">Community &amp; Social Support</text>
+  <text x="800" y="807" class="lso" style="text-anchor:middle;">Social determinants of health</text>
+  <circle cx="800" cy="752" r="37" class="node-hit"/>
+</g>
+
+<!-- ONTARIO HEALTH (495,450,r=25)
+     label LEFT: x=495-25-12=458, text-anchor=end -->
+<g class="node-group"
+   data-title="Ontario Health"
+   data-desc="Provincial agency responsible for planning, funding coordination and performance improvement — overseeing 6 regional teams and supporting all 58 Ontario Health Teams across the province. (Source: ontariohealth.ca)">
+  <circle cx="495" cy="450" r="25" class="nbo"/>
+  <circle cx="495" cy="450" r="16" class="nbi"/>
+  <text x="495" y="451"
+    style="font-size:15px;font-family:'Segoe UI Emoji',Arial,sans-serif;
+           dominant-baseline:middle;text-anchor:middle;pointer-events:none;">⚙️</text>
+  <text x="458" y="445" class="lmo" style="text-anchor:end;">Ontario Health</text>
+  <text x="458" y="459" class="lso" style="text-anchor:end;">System planning · 6 regions</text>
+  <circle cx="495" cy="450" r="37" class="node-hit"/>
+</g>
+
+<!-- DIGITAL HEALTH (585,240,r=25)
+     label UPPER-LEFT: x=548(end), y_main=240-25-20=195, y_sub=209 -->
+<g class="node-group"
+   data-title="Digital Health Infrastructure"
+   data-desc="Electronic Health Records, ConnectingOntario, ONE ID and Health811 — the digital backbone enabling providers to share patient information. Ontario is investing in remote care management to support patients at home. (Source: ontario.ca Ministry of Health, 2024–25 Annual Plan)">
+  <circle cx="585" cy="240" r="25" class="nbo"/>
+  <circle cx="585" cy="240" r="16" class="nbi"/>
+  <text x="585" y="241"
+    style="font-size:15px;font-family:'Segoe UI Emoji',Arial,sans-serif;
+           dominant-baseline:middle;text-anchor:middle;pointer-events:none;">📡</text>
+  <text x="548" y="197" class="lmo" style="text-anchor:end;">Digital Health</text>
+  <text x="548" y="211" class="lso" style="text-anchor:end;">EHR · ConnectingOntario · Health811</text>
+  <circle cx="585" cy="240" r="37" class="node-hit"/>
+</g>
+
+</svg>
+</div><!-- /canvas-wrap -->
+
+<div class="caption-bar">
+  <div class="caption-text" id="captionText">
+    Ontario's 58 Ontario Health Teams are reshaping integrated care across the province.
+  </div>
+  <div class="caption-dots" id="captionDots"></div>
+</div>
+
+<div class="node-tooltip" id="tooltip">
+  <div class="tooltip-title" id="ttTitle"></div>
+  <div class="tooltip-desc"  id="ttDesc"></div>
+</div>
+</div><!-- /viz-wrap -->
+
+<script>
+// ── CAPTIONS (verified numbers from ontario.ca / Ontario Health) ──
+const captions = [
+  "Ontario's 58 Ontario Health Teams are reshaping integrated care across the province.",
+  "15 million Ontarians. One connected system, centred on the patient.",
+  "The patient is at the centre of every system design decision.",
+  "Home and community care: a 94% reduction in wait-listed patients since 2022–23.",
+  "4,600+ pharmacies delivering expanded clinical services to Ontarians.",
+  "Coordinated referrals ensure care moves with the patient.",
+  "Primary care is the foundation of a high-performing health system.",
+  "Mental Health & Addictions care is care — and it belongs in the system.",
+  "Ontario's 626 long-term care homes serving 78,000+ residents.",
+  "34 Public Health Units connecting prevention to the broader system."
+];
+
+const captionEl = document.getElementById('captionText');
+const dotsEl    = document.getElementById('captionDots');
+captions.forEach((_,i) => {
+  const d = document.createElement('div');
+  d.className = 'caption-dot' + (i===0?' active':'');
+  dotsEl.appendChild(d);
+});
+let ci = 0;
+setTimeout(() => captionEl.classList.add('visible'), 500);
+setInterval(() => {
+  captionEl.classList.remove('visible');
+  setTimeout(() => {
+    ci = (ci + 1) % captions.length;
+    captionEl.textContent = captions[ci];
+    captionEl.classList.add('visible');
+    dotsEl.querySelectorAll('.caption-dot').forEach((d,i) => d.classList.toggle('active', i===ci));
+  }, 650);
+}, 4600);
+
+// ── PARTICLES ──
+const svgNS = 'http://www.w3.org/2000/svg';
+const pGrp  = document.getElementById('particles');
+const pDefs = [
+  {x1:800,y1:420, x2:800,y2:280, c:'#52E0A5', d:2.2, dl:0},
+  {x1:800,y1:420, x2:920,y2:332, c:'#52E0A5', d:2.5, dl:.9},
+  {x1:832,y1:450, x2:965,y2:450, c:'#fff',    d:2.0, dl:.3},
+  {x1:822,y1:472, x2:920,y2:568, c:'#fff',    d:2.3, dl:1.2},
+  {x1:800,y1:482, x2:800,y2:618, c:'#fff',    d:2.1, dl:.6},
+  {x1:778,y1:472, x2:680,y2:568, c:'#fff',    d:2.4, dl:.9},
+  {x1:768,y1:450, x2:635,y2:450, c:'#52E0A5', d:2.0, dl:.2},
+  {x1:778,y1:428, x2:680,y2:332, c:'#fff',    d:2.3, dl:1.5},
+  {x1:800,y1:280, x2:800,y2:420, c:'rgba(255,255,255,.5)', d:3.1, dl:1.2},
+  {x1:635,y1:450, x2:768,y2:450, c:'rgba(255,255,255,.5)', d:2.9, dl:.5},
+  {x1:800,y1:148, x2:800,y2:250, c:'rgba(255,255,255,.4)', d:3.6, dl:.4},
+  {x1:1015,y1:240,x2:838,y2:428,c:'rgba(255,255,255,.3)', d:4.0, dl:1.8},
+  {x1:1105,y1:450,x2:993,y2:450,c:'rgba(255,255,255,.35)',d:3.3, dl:.7},
+  {x1:495, y1:450,x2:607,y2:450,c:'rgba(82,224,165,.5)', d:3.9, dl:2.0},
+  {x1:585, y1:240,x2:788,y2:278,c:'rgba(82,224,165,.4)', d:3.6, dl:1.1},
+];
+
+pDefs.forEach((p,idx) => {
+  for(let k=0; k<2; k++){
+    const pathEl = document.createElementNS(svgNS,'path');
+    const pid = `p${idx}k${k}`;
+    pathEl.setAttribute('id', pid);
+    pathEl.setAttribute('d', `M${p.x1},${p.y1} L${p.x2},${p.y2}`);
+    pathEl.setAttribute('fill','none'); pathEl.setAttribute('stroke','none');
+    pGrp.appendChild(pathEl);
+
+    const circ = document.createElementNS(svgNS,'circle');
+    circ.setAttribute('r', p.c.includes('52E0A5') ? 3 : 2.5);
+    circ.setAttribute('fill', p.c);
+    circ.setAttribute('opacity','0.9');
+    circ.setAttribute('filter','url(#glow)');
+
+    const anim = document.createElementNS(svgNS,'animateMotion');
+    anim.setAttribute('dur',  (p.d + k*p.d*.5)+'s');
+    anim.setAttribute('begin',(p.dl + k*(p.d/2))+'s');
+    anim.setAttribute('repeatCount','indefinite');
+    const mpath = document.createElementNS(svgNS,'mpath');
+    mpath.setAttributeNS('http://www.w3.org/1999/xlink','href','#'+pid);
+    anim.appendChild(mpath); circ.appendChild(anim); pGrp.appendChild(circ);
+  }
+});
+
+// ── TOOLTIPS ──
+const tooltip = document.getElementById('tooltip');
+const ttTitle  = document.getElementById('ttTitle');
+const ttDesc   = document.getElementById('ttDesc');
+const cWrap    = document.getElementById('canvasWrap');
+
+document.querySelectorAll('.node-group').forEach(n => {
+  const hit = n.querySelector('.node-hit');
+  if(!hit) return;
+  hit.addEventListener('mouseenter',() => {
+    ttTitle.textContent = n.dataset.title||'';
+    ttDesc.textContent  = n.dataset.desc||'';
+    tooltip.classList.add('visible');
+  });
+  hit.addEventListener('mousemove', e => {
+    const r = cWrap.getBoundingClientRect();
+    let tx = e.clientX - r.left + 16;
+    let ty = e.clientY - r.top  - 12;
+    if(tx + 260 > r.width)  tx = e.clientX - r.left - 265;
+    if(ty < 0) ty = e.clientY - r.top + 22;
+    tooltip.style.left = tx+'px';
+    tooltip.style.top  = ty+'px';
+  });
+  hit.addEventListener('mouseleave',() => tooltip.classList.remove('visible'));
+});
+</script>
+</body>
+</html>
