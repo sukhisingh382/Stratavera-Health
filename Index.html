@@ -1,0 +1,465 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TEO Command Centre — Ontario Academic Health System</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.10.0/dist/tabler-icons.min.css">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+:root{
+  --color-text-primary:#1A2E3B;
+  --color-text-secondary:#4A6274;
+  --color-background-primary:#FFFFFF;
+  --color-background-secondary:#F4F8FB;
+  --color-border-tertiary:#D8E4EA;
+  --color-border-secondary:#C0CDD6;
+  --border-radius-lg:10px;
+  --border-radius-md:8px;
+}
+@media(prefers-color-scheme:dark){
+  :root{
+    --color-text-primary:#E8EEF2;
+    --color-text-secondary:#8BA4B5;
+    --color-background-primary:#1A2530;
+    --color-background-secondary:#1E2E3D;
+    --color-border-tertiary:#2A3D4E;
+    --color-border-secondary:#354E63;
+  }
+}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;font-size:13px;background:var(--color-background-secondary);color:var(--color-text-primary);min-height:100vh;}
+.teo-hdr{background:#091E35;padding:12px 24px 10px;border-bottom:3px solid #0A7B6A;position:sticky;top:0;z-index:100;}
+.teo-hdr-inner{display:flex;justify-content:space-between;align-items:flex-start;max-width:1600px;margin:0 auto;}
+.teo-logo{width:32px;height:32px;background:#0A7B6A;border-radius:7px;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.vt-btn{padding:6px 18px;border-radius:6px;font-size:12px;font-weight:500;cursor:pointer;border:0.5px solid rgba(255,255,255,0.2);background:transparent;color:rgba(255,255,255,0.55);transition:all .15s;white-space:nowrap;display:block;width:130px;text-align:center;}
+.vt-btn.active{background:#0A7B6A;color:#fff;border-color:#0A7B6A;}
+.teo-nav{display:flex;gap:4px;padding:7px 24px;background:#0D1F35;overflow-x:auto;position:sticky;top:62px;z-index:99;}
+.teo-nav-inner{display:flex;gap:4px;max-width:1600px;margin:0 auto;width:100%;}
+.teo-nav-btn{padding:5px 12px;border-radius:5px;font-size:12px;cursor:pointer;border:none;background:transparent;color:#6B8A9A;white-space:nowrap;transition:all .15s;}
+.teo-nav-btn:hover{color:#9FE1CB;background:rgba(10,123,106,0.15);}
+.teo-nav-btn.active{color:#fff;background:#0A7B6A;}
+.teo-view{padding:16px 24px;max-width:1600px;margin:0 auto;}
+.card{background:var(--color-background-primary);border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-lg);padding:14px 16px;}
+.card-title{font-size:13px;font-weight:600;color:var(--color-text-primary);margin-bottom:10px;}
+.kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:12px;}
+.kpi-tile{background:var(--color-background-secondary);border-radius:var(--border-radius-md);padding:14px 16px;border:0.5px solid var(--color-border-tertiary);}
+.kpi-lbl{font-size:12px;color:var(--color-text-secondary);margin-bottom:5px;display:flex;align-items:center;gap:5px;}
+.kpi-val{font-size:28px;font-weight:500;color:var(--color-text-primary);line-height:1;margin-bottom:4px;}
+.kpi-meta{font-size:12px;color:var(--color-text-secondary);}
+.kpi-delta{font-size:12px;font-weight:500;margin-top:3px;}
+.d-up{color:#0F6E56;} .d-dn{color:#A32D2D;} .d-fl{color:#854F0B;}
+.two-col{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:10px;margin-bottom:12px;}
+.three-col{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr) minmax(0,1fr);gap:10px;margin-bottom:12px;}
+.pri-row{display:flex;align-items:center;gap:10px;margin-bottom:9px;}
+.pri-lbl{font-size:12px;color:var(--color-text-primary);width:160px;flex-shrink:0;line-height:1.4;}
+.pri-bar-bg{flex:1;height:8px;background:var(--color-background-secondary);border-radius:4px;}
+.pri-bar-fill{height:8px;border-radius:4px;}
+.pri-pct{font-size:12px;font-weight:600;width:36px;text-align:right;}
+.rag-row{display:flex;align-items:center;gap:8px;margin-bottom:7px;}
+.rag-dot{width:9px;height:9px;border-radius:50%;flex-shrink:0;}
+.rag-lbl{font-size:12px;color:var(--color-text-primary);flex:1;}
+.rag-bar-bg{width:80px;height:6px;background:var(--color-background-secondary);border-radius:3px;}
+.rag-bar-f{height:6px;border-radius:3px;}
+.rag-n{font-size:12px;font-weight:600;width:20px;}
+.trend-a{font-size:12px;font-weight:600;}
+.risk-tbl{width:100%;border-collapse:collapse;font-size:12px;}
+.risk-tbl th{text-align:left;font-weight:600;color:var(--color-text-secondary);padding:6px 8px;border-bottom:0.5px solid var(--color-border-secondary);background:var(--color-background-secondary);}
+.risk-tbl td{padding:7px 8px;border-bottom:0.5px solid var(--color-border-tertiary);color:var(--color-text-primary);vertical-align:middle;}
+.risk-tbl tr:last-child td{border-bottom:none;}
+.badge{display:inline-block;font-size:11px;font-weight:600;padding:2px 8px;border-radius:4px;}
+.b-red{background:#FCEBEB;color:#791F1F;} .b-amb{background:#FAEEDA;color:#633806;} .b-grn{background:#EAF3DE;color:#27500A;} .b-blu{background:#E6F1FB;color:#0C447C;} .b-gry{background:#F1EFE8;color:#444441;}
+.ms-item{display:flex;align-items:flex-start;gap:9px;padding:6px 0;border-bottom:0.5px solid var(--color-border-tertiary);}
+.ms-item:last-child{border-bottom:none;}
+.ms-dot{width:9px;height:9px;border-radius:50%;margin-top:3px;flex-shrink:0;}
+.ms-text{font-size:12px;color:var(--color-text-primary);line-height:1.4;}
+.ms-meta{font-size:11px;color:var(--color-text-secondary);margin-top:2px;}
+.ai-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px;}
+.ai-stat{background:var(--color-background-secondary);border-radius:var(--border-radius-md);padding:10px;text-align:center;}
+.ai-num{font-size:22px;font-weight:500;}
+.ai-sub{font-size:11px;color:var(--color-text-secondary);margin-top:2px;}
+.alerts-bar{background:#0D1F35;padding:12px 16px;margin:10px -16px -14px;border-top:2px solid #E24B4A;border-radius:0 0 var(--border-radius-lg) var(--border-radius-lg);}
+.alerts-title{font-size:12px;font-weight:600;color:#f09595;margin-bottom:8px;display:flex;align-items:center;gap:6px;}
+.alerts-list{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;}
+.alert-item{background:rgba(226,75,74,0.12);border:0.5px solid rgba(226,75,74,0.3);border-radius:7px;padding:8px 10px;}
+.alert-cat{font-size:11px;font-weight:600;color:#f09595;margin-bottom:3px;}
+.alert-txt{font-size:12px;color:rgba(255,255,255,0.85);line-height:1.4;}
+.op-kpi-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-bottom:12px;}
+.op-kpi{background:var(--color-background-secondary);border-radius:var(--border-radius-md);padding:12px 14px;border:0.5px solid var(--color-border-tertiary);}
+.op-kpi-lbl{font-size:12px;color:var(--color-text-secondary);margin-bottom:4px;}
+.op-kpi-val{font-size:22px;font-weight:500;line-height:1;margin-bottom:3px;}
+.op-kpi-sub{font-size:11px;color:var(--color-text-secondary);}
+.init-wrap{overflow-x:auto;margin-bottom:0;}
+.init-tbl{min-width:900px;width:100%;border-collapse:collapse;font-size:12px;}
+.init-tbl th{text-align:left;font-weight:600;color:var(--color-text-secondary);padding:7px 9px;border-bottom:0.5px solid var(--color-border-secondary);background:var(--color-background-secondary);white-space:nowrap;}
+.init-tbl td{padding:7px 9px;border-bottom:0.5px solid var(--color-border-tertiary);color:var(--color-text-primary);vertical-align:middle;}
+.init-tbl tr:hover td{background:var(--color-background-secondary);}
+.init-tbl tr:last-child td{border-bottom:none;}
+.prog-wrap{display:flex;align-items:center;gap:5px;}
+.prog-bg{width:50px;height:6px;background:var(--color-background-secondary);border-radius:3px;flex-shrink:0;}
+.prog-f{height:6px;border-radius:3px;}
+.cr-pill{display:inline-block;font-size:11px;padding:2px 7px;border-radius:4px;font-weight:600;}
+.ocm-row{display:flex;align-items:center;gap:8px;margin-bottom:8px;}
+.ocm-lbl{font-size:12px;color:var(--color-text-primary);width:165px;flex-shrink:0;line-height:1.4;}
+.ocm-bar-bg{flex:1;height:7px;background:var(--color-background-secondary);border-radius:4px;}
+.ocm-bar-f{height:7px;border-radius:4px;}
+.ocm-pct{font-size:12px;font-weight:600;width:36px;text-align:right;}
+.sent-row{display:flex;align-items:center;gap:7px;margin-bottom:5px;}
+.sent-lbl{font-size:12px;width:82px;flex-shrink:0;}
+.sent-bar-bg{flex:1;height:9px;background:var(--color-background-secondary);border-radius:4px;}
+.sent-bar-f{height:9px;border-radius:4px;}
+.sent-pct{font-size:12px;font-weight:600;width:32px;text-align:right;}
+.inn-stage{display:flex;align-items:center;gap:8px;margin-bottom:7px;}
+.inn-lbl{font-size:12px;color:var(--color-text-primary);width:65px;flex-shrink:0;}
+.inn-bar-bg{flex:1;height:9px;background:var(--color-background-secondary);border-radius:4px;}
+.inn-bar-f{height:9px;border-radius:4px;}
+.inn-n{font-size:12px;font-weight:600;width:20px;text-align:right;}
+.divider{font-size:11px;font-weight:600;color:var(--color-text-secondary);text-transform:uppercase;letter-spacing:.05em;margin:10px 0 7px;padding-top:8px;border-top:0.5px solid var(--color-border-tertiary);}
+.ben-legend{display:flex;flex-direction:column;gap:7px;margin-top:8px;}
+.ben-leg-row{display:flex;align-items:center;gap:7px;}
+.ben-swatch{width:10px;height:10px;border-radius:3px;flex-shrink:0;}
+.ben-leg-lbl{font-size:12px;color:var(--color-text-secondary);flex:1;}
+.ben-leg-val{font-size:12px;font-weight:600;color:var(--color-text-primary);}
+.sec-note{font-size:11px;color:var(--color-text-secondary);font-style:italic;}
+</style>
+</head>
+<body>
+<div class="teo-hdr">
+  <div class="teo-hdr-inner">
+    <div style="display:flex;align-items:flex-start;gap:12px;">
+      <div class="teo-logo"><i class="ti ti-building-hospital" style="font-size:16px;color:#fff;"></i></div>
+      <div>
+        <div style="color:#fff;font-size:20px;font-weight:500;line-height:1.2;">TEO Command Centre</div>
+        <div style="color:#6B8A9A;font-size:12px;margin-top:4px;">Ontario Academic Health System &nbsp;·&nbsp; Reporting Period: May 2026</div>
+        <div style="color:#5DCAA5;font-size:12px;margin-top:3px;">Vision: Deliver highest quality of care. &nbsp;|&nbsp; Values: Compassion. Equity. Excellence. Respect. Accountability.</div>
+      </div>
+    </div>
+    <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px;flex-shrink:0;margin-left:16px;">
+      <button class="vt-btn active" id="btn-exec" onclick="setView('exec')">Executive view</button>
+      <button class="vt-btn" id="btn-ops" onclick="setView('ops')">Operational view</button>
+      <div style="color:#6B8A9A;font-size:11px;text-align:right;">Updated: May 26, 2026 &nbsp;·&nbsp; Next Steering: Jun 17</div>
+    </div>
+  </div>
+</div>
+<div id="nav-exec" class="teo-nav">
+  <div class="teo-nav-inner">
+    <button class="teo-nav-btn active">Performance overview</button>
+    <button class="teo-nav-btn">Transformation roadmap</button>
+    <button class="teo-nav-btn">Corporate scorecard</button>
+    <button class="teo-nav-btn">Portfolio overview</button>
+    <button class="teo-nav-btn">Benefits realization</button>
+    <button class="teo-nav-btn">Enterprise risk register</button>
+    <button class="teo-nav-btn">Financial summary</button>
+    <button class="teo-nav-btn">Innovation pipeline</button>
+    <button class="teo-nav-btn">AI portfolio</button>
+  </div>
+</div>
+<div id="nav-ops" class="teo-nav" style="display:none;">
+  <div class="teo-nav-inner">
+    <button class="teo-nav-btn active">Performance overview</button>
+    <button class="teo-nav-btn">Performance scorecards</button>
+    <button class="teo-nav-btn">Operational plans</button>
+    <button class="teo-nav-btn">Risk register</button>
+    <button class="teo-nav-btn">Issues</button>
+    <button class="teo-nav-btn">Decisions</button>
+    <button class="teo-nav-btn">Go-live checklists</button>
+    <button class="teo-nav-btn">Reports</button>
+  </div>
+</div>
+
+<!-- EXECUTIVE VIEW -->
+<div id="view-exec" class="teo-view">
+  <div class="kpi-grid">
+    <div class="kpi-tile">
+      <div class="kpi-lbl"><i class="ti ti-chart-pie"></i>Portfolio health</div>
+      <div class="kpi-val">63<span style="font-size:16px;">%</span></div>
+      <div class="kpi-meta">5 of 8 initiatives on track</div>
+      <div class="kpi-delta d-fl">→ Flat vs Apr</div>
+    </div>
+    <div class="kpi-tile">
+      <div class="kpi-lbl"><i class="ti ti-currency-dollar"></i>Benefits realized</div>
+      <div class="kpi-val">$560K</div>
+      <div class="kpi-meta">27% of $2.1M annual target</div>
+      <div class="kpi-delta d-up">↑ $280K vs Q1</div>
+    </div>
+    <div class="kpi-tile">
+      <div class="kpi-lbl"><i class="ti ti-wallet"></i>Budget utilization</div>
+      <div class="kpi-val">63<span style="font-size:16px;">%</span></div>
+      <div class="kpi-meta">$1.8M of $2.85M approved</div>
+      <div class="kpi-delta d-up">↑ On plan</div>
+    </div>
+    <div class="kpi-tile">
+      <div class="kpi-lbl"><i class="ti ti-heart-rate-monitor"></i>Org change readiness</div>
+      <div class="kpi-val">61<span style="font-size:16px;">/100</span></div>
+      <div class="kpi-meta">Target ≥65 · Apr: 58</div>
+      <div class="kpi-delta d-up">↑ 3 pts vs Apr</div>
+    </div>
+  </div>
+  <div class="two-col">
+    <div class="card">
+      <div class="card-title">Strategic priorities progress</div>
+      <div style="font-size:12px;font-weight:600;color:var(--color-text-secondary);margin-bottom:8px;">Strategic goals</div>
+      <div class="pri-row"><div class="pri-lbl">Goal #1: Aging in place</div><div class="pri-bar-bg"><div class="pri-bar-fill" style="width:68%;background:#1D9E75;"></div></div><div class="pri-pct" style="color:#0F6E56;">68%</div></div>
+      <div class="pri-row"><div class="pri-lbl">Goal #2: Enhance quality of care</div><div class="pri-bar-bg"><div class="pri-bar-fill" style="width:75%;background:#1D9E75;"></div></div><div class="pri-pct" style="color:#0F6E56;">75%</div></div>
+      <div class="pri-row" style="margin-bottom:10px;"><div class="pri-lbl">Goal #3: Precision medicine</div><div class="pri-bar-bg"><div class="pri-bar-fill" style="width:52%;background:#EF9F27;"></div></div><div class="pri-pct" style="color:#854F0B;">52%</div></div>
+      <div style="font-size:12px;font-weight:600;color:var(--color-text-secondary);margin-bottom:8px;padding-top:8px;border-top:0.5px solid var(--color-border-tertiary);">Strategic enablers</div>
+      <div class="pri-row"><div class="pri-lbl">Enabler #1: People & culture</div><div class="pri-bar-bg"><div class="pri-bar-fill" style="width:70%;background:#1D9E75;"></div></div><div class="pri-pct" style="color:#0F6E56;">70%</div></div>
+      <div class="pri-row"><div class="pri-lbl">Enabler #2: Digital transformation</div><div class="pri-bar-bg"><div class="pri-bar-fill" style="width:65%;background:#1D9E75;"></div></div><div class="pri-pct" style="color:#0F6E56;">65%</div></div>
+      <div class="pri-row" style="margin-bottom:0;"><div class="pri-lbl">Enabler #3: Financial sustainability</div><div class="pri-bar-bg"><div class="pri-bar-fill" style="width:62%;background:#EF9F27;"></div></div><div class="pri-pct" style="color:#854F0B;">62%</div></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Benefits by category — YTD</div>
+      <div style="display:flex;align-items:center;gap:16px;">
+        <div style="position:relative;width:120px;height:120px;flex-shrink:0;">
+          <canvas id="benDonut"></canvas>
+          <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;pointer-events:none;">
+            <div style="font-size:14px;font-weight:600;color:var(--color-text-primary);">$560K</div>
+            <div style="font-size:11px;color:var(--color-text-secondary);">Realized</div>
+          </div>
+        </div>
+        <div class="ben-legend">
+          <div class="ben-leg-row"><div class="ben-swatch" style="background:#1D9E75;"></div><div class="ben-leg-lbl">Financial</div><div class="ben-leg-val">$263K (47%)</div></div>
+          <div class="ben-leg-row"><div class="ben-swatch" style="background:#378ADD;"></div><div class="ben-leg-lbl">Operational</div><div class="ben-leg-val">$146K (26%)</div></div>
+          <div class="ben-leg-row"><div class="ben-swatch" style="background:#EF9F27;"></div><div class="ben-leg-lbl">Quality</div><div class="ben-leg-val">$101K (18%)</div></div>
+          <div class="ben-leg-row"><div class="ben-swatch" style="background:#7F77DD;"></div><div class="ben-leg-lbl">Patient experience</div><div class="ben-leg-val">$50K (9%)</div></div>
+        </div>
+      </div>
+      <div class="divider">Portfolio RAG with trend</div>
+      <div class="rag-row"><div class="rag-dot" style="background:#1D9E75;"></div><div class="rag-lbl">On track</div><div class="rag-bar-bg"><div class="rag-bar-f" style="width:62.5%;background:#1D9E75;"></div></div><div class="rag-n">5</div><div class="trend-a d-fl">→</div></div>
+      <div class="rag-row"><div class="rag-dot" style="background:#EF9F27;"></div><div class="rag-lbl">At risk</div><div class="rag-bar-bg"><div class="rag-bar-f" style="width:25%;background:#EF9F27;"></div></div><div class="rag-n">2</div><div class="trend-a d-dn">↑</div></div>
+      <div class="rag-row"><div class="rag-dot" style="background:#E24B4A;"></div><div class="rag-lbl">Off track</div><div class="rag-bar-bg"><div class="rag-bar-f" style="width:12.5%;background:#E24B4A;"></div></div><div class="rag-n">1</div><div class="trend-a d-fl">→</div></div>
+    </div>
+  </div>
+  <div class="card" style="margin-bottom:12px;">
+    <div class="card-title">Transformation financial summary — cumulative ($000s)</div>
+    <div style="display:flex;gap:20px;margin-bottom:8px;flex-wrap:wrap;">
+      <span style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--color-text-secondary);"><span style="width:18px;height:2px;background:#9FE1CB;display:inline-block;border:0.5px dashed #1D9E75;"></span>Planned</span>
+      <span style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--color-text-secondary);"><span style="width:18px;height:2px;background:#1D9E75;display:inline-block;"></span>Actual</span>
+      <span style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--color-text-secondary);"><span style="width:18px;height:2px;background:#378ADD;display:inline-block;border:0.5px dotted #185FA5;"></span>Forecast</span>
+    </div>
+    <div style="position:relative;width:100%;height:140px;"><canvas id="finLine"></canvas></div>
+  </div>
+  <div class="card" style="margin-bottom:12px;">
+    <div class="card-title">Top enterprise risks</div>
+    <table class="risk-tbl">
+      <thead><tr><th>Risk</th><th>Category</th><th>Level</th><th>Score</th><th>Owner</th><th>Status</th></tr></thead>
+      <tbody>
+        <tr><td>Epic/lab system integration failure</td><td>Technology</td><td><span class="badge b-red">HIGH</span></td><td style="font-weight:600;color:#A32D2D;">25</td><td>CIO</td><td><span class="badge b-blu">Escalated</span></td></tr>
+        <tr><td>Staff change fatigue — Wave 1 collision</td><td>Capacity</td><td><span class="badge b-red">HIGH</span></td><td style="font-weight:600;color:#A32D2D;">16</td><td>VP HR</td><td><span class="badge b-amb">In progress</span></td></tr>
+        <tr><td>Physician sponsorship gap</td><td>Governance</td><td><span class="badge b-red">HIGH</span></td><td style="font-weight:600;color:#A32D2D;">15</td><td>CTO</td><td><span class="badge b-amb">In progress</span></td></tr>
+        <tr><td>OR savings — union negotiation delay</td><td>Finance</td><td><span class="badge b-amb">MED</span></td><td style="font-weight:600;color:#854F0B;">12</td><td>VP Surgical</td><td><span class="badge b-amb">In progress</span></td></tr>
+        <tr><td>PHIPA compliance gap in AI data feeds</td><td>Regulatory</td><td><span class="badge b-amb">MED</span></td><td style="font-weight:600;color:#854F0B;">10</td><td>Privacy Officer</td><td><span class="badge b-amb">In progress</span></td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="three-col">
+    <div class="card">
+      <div class="card-title">Innovation pipeline health</div>
+      <div class="inn-stage"><div class="inn-lbl">Explore</div><div class="inn-bar-bg"><div class="inn-bar-f" style="width:100%;background:#B5D4F4;"></div></div><div class="inn-n" style="color:#185FA5;">4</div></div>
+      <div class="inn-stage"><div class="inn-lbl">Design</div><div class="inn-bar-bg"><div class="inn-bar-f" style="width:50%;background:#378ADD;"></div></div><div class="inn-n" style="color:#185FA5;">2</div></div>
+      <div class="inn-stage"><div class="inn-lbl">Pilot</div><div class="inn-bar-bg"><div class="inn-bar-f" style="width:50%;background:#1D9E75;"></div></div><div class="inn-n" style="color:#0F6E56;">2</div></div>
+      <div class="inn-stage"><div class="inn-lbl">Evaluate</div><div class="inn-bar-bg"><div class="inn-bar-f" style="width:25%;background:#EF9F27;"></div></div><div class="inn-n" style="color:#854F0B;">1</div></div>
+      <div class="inn-stage"><div class="inn-lbl">Scale</div><div class="inn-bar-bg"><div class="inn-bar-f" style="width:50%;background:#E8A020;"></div></div><div class="inn-n" style="color:#633806;">2</div></div>
+      <div class="sec-note" style="margin-top:8px;">Total: 11 innovation initiatives</div>
+    </div>
+    <div class="card">
+      <div class="card-title">AI portfolio health</div>
+      <div style="text-align:center;margin-bottom:10px;">
+        <div style="font-size:36px;font-weight:500;color:var(--color-text-primary);">7</div>
+        <div style="font-size:12px;color:var(--color-text-secondary);">AI initiatives active</div>
+      </div>
+      <div class="ai-grid">
+        <div class="ai-stat"><div class="ai-num" style="color:#185FA5;">3</div><div class="ai-sub">In pilot</div></div>
+        <div class="ai-stat"><div class="ai-num" style="color:#0F6E56;">2</div><div class="ai-sub">In production</div></div>
+        <div class="ai-stat"><div class="ai-num" style="color:#854F0B;">2</div><div class="ai-sub">Planned</div></div>
+        <div class="ai-stat"><div class="ai-num" style="color:#A32D2D;">0</div><div class="ai-sub">On hold</div></div>
+      </div>
+      <div style="border:1px solid #1D9E75;border-radius:6px;padding:7px 10px;margin-top:6px;">
+        <div style="font-size:12px;color:var(--color-text-primary);font-weight:600;"><i class="ti ti-check" style="color:#1D9E75;"></i> AI governance board: Active</div>
+        <div style="font-size:12px;color:var(--color-text-secondary);margin-top:3px;">PHIPA reviewed: 5 of 7 initiatives</div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">Key milestones — next 30 days</div>
+      <div class="ms-item"><div class="ms-dot" style="background:#E24B4A;"></div><div><div class="ms-text">Epic go/no-go gate — Steering decision</div><div class="ms-meta">Jun 17 · CTO + CIO</div></div></div>
+      <div class="ms-item"><div class="ms-dot" style="background:#EF9F27;"></div><div><div class="ms-text">OR scheduling union update to Board</div><div class="ms-meta">Jun 17 · VP Surgical + VP HR</div></div></div>
+      <div class="ms-item"><div class="ms-dot" style="background:#378ADD;"></div><div><div class="ms-text">Patient portal co-design session — PAC</div><div class="ms-meta">Jun 12 · VP Patient Experience</div></div></div>
+      <div class="ms-item"><div class="ms-dot" style="background:#1D9E75;"></div><div><div class="ms-text">Ontario Health digital maturity report</div><div class="ms-meta">Jun 30 · TMO Director + CIO</div></div></div>
+      <div class="ms-item"><div class="ms-dot" style="background:#1D9E75;"></div><div><div class="ms-text">Epic clinical champions activated (12)</div><div class="ms-meta">Jun 7 · CMIO</div></div></div>
+    </div>
+  </div>
+  <div class="card alerts-bar" style="border-radius:var(--border-radius-lg);margin:0;">
+    <div class="alerts-title"><i class="ti ti-alert-triangle" style="font-size:14px;"></i>Key alerts</div>
+    <div class="alerts-list">
+      <div class="alert-item"><div class="alert-cat">Technology · HIGH</div><div class="alert-txt">Epic lab integration failure — manual workaround active; Steering go/no-go required Jun 17</div></div>
+      <div class="alert-item"><div class="alert-cat">Finance · MED</div><div class="alert-txt">OR savings at 7% of target — union talks unresolved; CFO flagging year-end benefit risk</div></div>
+      <div class="alert-item"><div class="alert-cat">Regulatory · MED</div><div class="alert-txt">PHIPA PIA overdue for AI Clinical Decision Support — go-live paused pending Privacy review</div></div>
+    </div>
+  </div>
+  <div style="height:16px;"></div>
+</div>
+
+<!-- OPERATIONAL VIEW -->
+<div id="view-ops" class="teo-view" style="display:none;">
+  <div class="op-kpi-grid">
+    <div class="op-kpi"><div class="op-kpi-lbl"><i class="ti ti-alert-triangle"></i> Open issues</div><div class="op-kpi-val" style="color:#A32D2D;">7</div><div class="op-kpi-sub">3 HIGH · 4 MED</div></div>
+    <div class="op-kpi"><div class="op-kpi-lbl"><i class="ti ti-clock-exclamation"></i> Actions overdue</div><div class="op-kpi-val" style="color:#854F0B;">9</div><div class="op-kpi-sub">Oldest: 14 days</div></div>
+    <div class="op-kpi"><div class="op-kpi-lbl"><i class="ti ti-flag"></i> Milestones — Jun</div><div class="op-kpi-val">6</div><div class="op-kpi-sub">4 on track · 2 at risk</div></div>
+    <div class="op-kpi"><div class="op-kpi-lbl"><i class="ti ti-file-description"></i> Decisions pending</div><div class="op-kpi-val" style="color:#185FA5;">3</div><div class="op-kpi-sub">Jun Steering agenda</div></div>
+    <div class="op-kpi"><div class="op-kpi-lbl"><i class="ti ti-heart-rate-monitor"></i> Change readiness</div><div class="op-kpi-val" style="color:#854F0B;">61</div><div class="op-kpi-sub">Target ≥65 · Apr: 58</div></div>
+  </div>
+  <div class="card" style="margin-bottom:12px;">
+    <div class="card-title">Initiative portfolio</div>
+    <div class="init-wrap">
+      <table class="init-tbl">
+        <thead><tr><th>ID</th><th>Initiative</th><th>Strategic priority</th><th>Owner</th><th>Status</th><th>Progress</th><th>Budget</th><th>Readiness</th><th>Upcoming milestone</th></tr></thead>
+        <tbody id="init-tbody"></tbody>
+      </table>
+    </div>
+  </div>
+  <div class="two-col">
+    <div class="card">
+      <div class="card-title">Change readiness & adoption — by strategic pillar</div>
+      <div style="font-size:12px;font-weight:600;color:var(--color-text-secondary);margin-bottom:8px;">Strategic goals</div>
+      <div class="ocm-row"><div class="ocm-lbl">Goal #1: Aging in place</div><div class="ocm-bar-bg"><div class="ocm-bar-f" style="width:58%;background:#EF9F27;"></div></div><div class="ocm-pct" style="color:#854F0B;">58%</div></div>
+      <div class="ocm-row"><div class="ocm-lbl">Goal #2: Enhance quality of care</div><div class="ocm-bar-bg"><div class="ocm-bar-f" style="width:72%;background:#1D9E75;"></div></div><div class="ocm-pct" style="color:#0F6E56;">72%</div></div>
+      <div class="ocm-row"><div class="ocm-lbl">Goal #3: Precision medicine</div><div class="ocm-bar-bg"><div class="ocm-bar-f" style="width:65%;background:#1D9E75;"></div></div><div class="ocm-pct" style="color:#0F6E56;">65%</div></div>
+      <div style="font-size:12px;font-weight:600;color:var(--color-text-secondary);margin:10px 0 8px;padding-top:8px;border-top:0.5px solid var(--color-border-tertiary);">Strategic enablers</div>
+      <div class="ocm-row"><div class="ocm-lbl">Enabler #1: People & culture</div><div class="ocm-bar-bg"><div class="ocm-bar-f" style="width:75%;background:#1D9E75;"></div></div><div class="ocm-pct" style="color:#0F6E56;">75%</div></div>
+      <div class="ocm-row"><div class="ocm-lbl">Enabler #2: Digital transformation</div><div class="ocm-bar-bg"><div class="ocm-bar-f" style="width:62%;background:#1D9E75;"></div></div><div class="ocm-pct" style="color:#0F6E56;">62%</div></div>
+      <div class="ocm-row"><div class="ocm-lbl">Enabler #3: Financial sustainability</div><div class="ocm-bar-bg"><div class="ocm-bar-f" style="width:48%;background:#EF9F27;"></div></div><div class="ocm-pct" style="color:#854F0B;">48%</div></div>
+      <div class="divider">Clinician sentiment — May pulse</div>
+      <div class="sent-row"><div class="sent-lbl" style="color:#27500A;">Supportive</div><div class="sent-bar-bg"><div class="sent-bar-f" style="width:35%;background:#1D9E75;"></div></div><div class="sent-pct" style="color:#0F6E56;">35%</div></div>
+      <div class="sent-row"><div class="sent-lbl" style="color:#633806;">Neutral</div><div class="sent-bar-bg"><div class="sent-bar-f" style="width:40%;background:#EF9F27;"></div></div><div class="sent-pct" style="color:#854F0B;">40%</div></div>
+      <div class="sent-row"><div class="sent-lbl" style="color:#791F1F;">Resistant</div><div class="sent-bar-bg"><div class="sent-bar-f" style="width:25%;background:#E24B4A;"></div></div><div class="sent-pct" style="color:#A32D2D;">25%</div></div>
+      <div style="background:var(--color-background-secondary);border-radius:7px;padding:10px 12px;margin-top:10px;">
+        <div style="font-size:12px;font-weight:600;color:var(--color-text-primary);margin-bottom:7px;">Physicians — drill-down</div>
+        <div class="sent-row" style="margin-bottom:5px;"><div class="sent-lbl" style="color:#27500A;">Supportive</div><div class="sent-bar-bg"><div class="sent-bar-f" style="width:28%;background:#1D9E75;"></div></div><div class="sent-pct" style="color:#0F6E56;">28%</div></div>
+        <div class="sent-row" style="margin-bottom:5px;"><div class="sent-lbl" style="color:#633806;">Neutral</div><div class="sent-bar-bg"><div class="sent-bar-f" style="width:44%;background:#EF9F27;"></div></div><div class="sent-pct" style="color:#854F0B;">44%</div></div>
+        <div class="sent-row" style="margin-bottom:0;"><div class="sent-lbl" style="color:#791F1F;">Resistant</div><div class="sent-bar-bg"><div class="sent-bar-f" style="width:28%;background:#E24B4A;"></div></div><div class="sent-pct" style="color:#A32D2D;">28%</div></div>
+      </div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:10px;">
+      <div class="card">
+        <div class="card-title">Risk & decisions</div>
+        <div style="font-size:12px;font-weight:600;color:var(--color-text-secondary);margin-bottom:7px;">Top risks</div>
+        <table class="risk-tbl">
+          <thead><tr><th>Risk</th><th>Level</th><th>Score</th><th>Status</th></tr></thead>
+          <tbody>
+            <tr><td>Epic/lab integration</td><td><span class="badge b-red">HIGH</span></td><td style="color:#A32D2D;font-weight:600;">25</td><td><span class="badge b-blu">Escalated</span></td></tr>
+            <tr><td>Change fatigue</td><td><span class="badge b-red">HIGH</span></td><td style="color:#A32D2D;font-weight:600;">16</td><td><span class="badge b-amb">In progress</span></td></tr>
+            <tr><td>OR savings delay</td><td><span class="badge b-amb">MED</span></td><td style="color:#854F0B;font-weight:600;">12</td><td><span class="badge b-amb">In progress</span></td></tr>
+          </tbody>
+        </table>
+        <div style="font-size:12px;font-weight:600;color:var(--color-text-secondary);margin:10px 0 7px;padding-top:8px;border-top:0.5px solid var(--color-border-tertiary);">Decisions due at Jun Steering</div>
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:0.5px solid var(--color-border-tertiary);"><span style="font-size:12px;">Epic go/no-go gate</span><span class="badge b-red">Jun 17</span></div>
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:0.5px solid var(--color-border-tertiary);"><span style="font-size:12px;">OR scheduling union path</span><span class="badge b-amb">Jun 17</span></div>
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;"><span style="font-size:12px;">OHT maturity report sign-off</span><span class="badge b-blu">Jun 30</span></div>
+      </div>
+      <div class="card">
+        <div class="card-title">Innovation portfolio — by stage</div>
+        <div class="inn-stage"><div class="inn-lbl">Explore</div><div class="inn-bar-bg"><div class="inn-bar-f" style="width:100%;background:#B5D4F4;"></div></div><div class="inn-n" style="color:#185FA5;">4</div></div>
+        <div class="inn-stage"><div class="inn-lbl">Design</div><div class="inn-bar-bg"><div class="inn-bar-f" style="width:50%;background:#378ADD;"></div></div><div class="inn-n" style="color:#185FA5;">2</div></div>
+        <div class="inn-stage"><div class="inn-lbl">Pilot</div><div class="inn-bar-bg"><div class="inn-bar-f" style="width:50%;background:#1D9E75;"></div></div><div class="inn-n" style="color:#0F6E56;">2</div></div>
+        <div class="inn-stage"><div class="inn-lbl">Evaluate</div><div class="inn-bar-bg"><div class="inn-bar-f" style="width:25%;background:#EF9F27;"></div></div><div class="inn-n" style="color:#854F0B;">1</div></div>
+        <div class="inn-stage"><div class="inn-lbl">Scale</div><div class="inn-bar-bg"><div class="inn-bar-f" style="width:50%;background:#E8A020;"></div></div><div class="inn-n" style="color:#633806;">2</div></div>
+        <div class="sec-note" style="margin-top:6px;">Total: 11</div>
+      </div>
+      <div class="card">
+        <div class="card-title">AI portfolio</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:7px;margin-bottom:8px;">
+          <div class="ai-stat"><div class="ai-num" style="color:#185FA5;">3</div><div class="ai-sub">In pilot</div></div>
+          <div class="ai-stat"><div class="ai-num" style="color:#0F6E56;">2</div><div class="ai-sub">Production</div></div>
+          <div class="ai-stat"><div class="ai-num" style="color:#854F0B;">2</div><div class="ai-sub">Planned</div></div>
+        </div>
+        <div style="border:1px solid #1D9E75;border-radius:6px;padding:7px 10px;">
+          <div style="font-size:12px;font-weight:600;color:var(--color-text-primary);"><i class="ti ti-check" style="color:#1D9E75;"></i> AI governance board: Active</div>
+          <div style="font-size:12px;color:var(--color-text-secondary);margin-top:3px;">PHIPA reviewed: 5 of 7 initiatives</div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title">Upcoming meetings</div>
+        <div class="ms-item"><div class="ms-dot" style="background:#185FA5;"></div><div><div class="ms-text">Cross-workstream integration review</div><div class="ms-meta">Jun 3 · 60 min · TMO Director</div></div></div>
+        <div class="ms-item"><div class="ms-dot" style="background:#0D2B4E;"></div><div><div class="ms-text">Steering Committee — June (go/no-go)</div><div class="ms-meta">Jun 17 · 90 min · CEO</div></div></div>
+        <div class="ms-item"><div class="ms-dot" style="background:#1D9E75;"></div><div><div class="ms-text">Ontario Health maturity submission</div><div class="ms-meta">Jun 30 · TMO Director</div></div></div>
+        <div class="ms-item"><div class="ms-dot" style="background:#0D2B4E;"></div><div><div class="ms-text">Epic post-go-live Steering (special)</div><div class="ms-meta">Jul 22 · 90 min · CEO + Board Chair</div></div></div>
+      </div>
+    </div>
+  </div>
+  <div style="height:16px;"></div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<script>
+const initiatives=[
+  ["I-01","Epic EHR Go-Live Ph.1","Enabler #2: Digital","CMIO","AMBER",45,"$1.35M",48,"Epic lab go/no-go — Jun 17"],
+  ["I-02","AI Clinical Decision Support","Enabler #2: Digital","CDS Lead","GREEN",15,"$820K",62,"PHIPA PIA — Jul 31"],
+  ["I-03","Clinical Training Program","Enabler #1: People","VP HR","GREEN",60,"$480K",78,"Cohort 3 launch — Jun 14"],
+  ["I-04","Patient Portal Enhancement","Goal #2: Quality","VP Pt. Exp.","GREEN",50,"$620K",71,"PAC co-design — Jun 12"],
+  ["I-05","OHT Data Interoperability","Enabler #2: Digital","CIO","GREEN",5,"$950K",55,"Partner MOU — Jul 15"],
+  ["I-06","OR Scheduling Optimization","Enabler #3: Financial","VP Surgical","RED",30,"$380K",32,"Union negotiation — Jun 17"],
+  ["I-07","Physician Engagement","Enabler #1: People","Chief of Staff","AMBER",35,"$220K",44,"Champion sessions — Jun 14"],
+  ["I-08","Research Data Platform","Goal #3: Precision","VP Research","GREEN",8,"$1.1M",68,"Governance framework — Jun 20"],
+];
+const rC={GREEN:"#1D9E75",AMBER:"#EF9F27",RED:"#E24B4A"};
+const rB={GREEN:"#EAF3DE",AMBER:"#FAEEDA",RED:"#FCEBEB"};
+const rT={GREEN:"#27500A",AMBER:"#633806",RED:"#791F1F"};
+const crCol=v=>v>=65?"#0F6E56":v>=50?"#854F0B":"#A32D2D";
+const crBg=v=>v>=65?"#EAF3DE":v>=50?"#FAEEDA":"#FCEBEB";
+const tbody=document.getElementById("init-tbody");
+initiatives.forEach(r=>{
+  const tr=document.createElement("tr");
+  tr.innerHTML=`<td style="color:#4A6274;font-size:12px;font-weight:600;">${r[0]}</td>
+    <td style="font-weight:600;">${r[1]}</td>
+    <td style="color:#4A6274;">${r[2]}</td>
+    <td>${r[3]}</td>
+    <td><span class="badge" style="background:${rB[r[4]]};color:${rT[r[4]]};">${r[4]}</span></td>
+    <td><div class="prog-wrap"><div class="prog-bg"><div class="prog-f" style="width:${r[5]}%;background:${rC[r[4]]};"></div></div><span style="font-size:12px;">${r[5]}%</span></div></td>
+    <td style="font-size:12px;">${r[6]}</td>
+    <td><span class="cr-pill" style="background:${crBg(r[7])};color:${crCol(r[7])};">${r[7]}%</span></td>
+    <td style="color:#4A6274;font-size:12px;">${r[8]}</td>`;
+  tbody.appendChild(tr);
+});
+function setView(v){
+  const e=v==="exec";
+  document.getElementById("view-exec").style.display=e?"block":"none";
+  document.getElementById("view-ops").style.display=e?"none":"block";
+  document.getElementById("nav-exec").style.display=e?"flex":"none";
+  document.getElementById("nav-ops").style.display=e?"none":"flex";
+  document.getElementById("btn-exec").classList.toggle("active",e);
+  document.getElementById("btn-ops").classList.toggle("active",!e);
+}
+document.querySelectorAll(".teo-nav-btn").forEach(btn=>{
+  btn.addEventListener("click",function(){
+    this.closest(".teo-nav-inner").querySelectorAll(".teo-nav-btn").forEach(b=>b.classList.remove("active"));
+    this.classList.add("active");
+  });
+});
+const isDark=matchMedia("(prefers-color-scheme:dark)").matches;
+const tc=isDark?"rgba(255,255,255,0.45)":"rgba(0,0,0,0.38)";
+const gc=isDark?"rgba(255,255,255,0.07)":"rgba(0,0,0,0.06)";
+new Chart(document.getElementById("benDonut"),{
+  type:"doughnut",
+  data:{labels:["Financial","Operational","Quality","Patient Exp."],
+    datasets:[{data:[263,146,101,50],backgroundColor:["#1D9E75","#378ADD","#EF9F27","#7F77DD"],borderWidth:0}]},
+  options:{responsive:true,maintainAspectRatio:false,cutout:"72%",
+    plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>" "+c.label+": $"+c.raw+"K"}}}}
+});
+const months=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+new Chart(document.getElementById("finLine"),{
+  type:"line",
+  data:{labels:months,datasets:[
+    {label:"Planned",data:[237,475,712,950,1187,1425,1663,1900,2137,2375,2612,2850],borderColor:"#9FE1CB",borderWidth:1.5,borderDash:[4,3],pointRadius:0,tension:.3,fill:false},
+    {label:"Actual",data:[50,130,240,390,560,null,null,null,null,null,null,null],borderColor:"#1D9E75",borderWidth:2,pointRadius:3,pointBackgroundColor:"#1D9E75",tension:.3,fill:false},
+    {label:"Forecast",data:[null,null,null,null,560,780,1050,1350,1700,2080,2450,2820],borderColor:"#378ADD",borderWidth:1.5,borderDash:[2,2],pointRadius:2,pointBackgroundColor:"#378ADD",tension:.3,fill:false}
+  ]},
+  options:{responsive:true,maintainAspectRatio:false,
+    plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>c.dataset.label+": $"+Math.round(c.raw||0)+"K"}}},
+    scales:{
+      x:{ticks:{color:tc,font:{size:11}},grid:{color:gc},border:{display:false}},
+      y:{ticks:{color:tc,font:{size:11},callback:v=>"$"+v+"K"},grid:{color:gc},border:{display:false}}
+    }
+  }
+});
+</script>
+</body>
+</html>
